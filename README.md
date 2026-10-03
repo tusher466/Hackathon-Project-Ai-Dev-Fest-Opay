@@ -1,4 +1,6 @@
-# Opay - AI-Powered MFS & Financial Safety Prototype
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0F172A,100:2563EB&height=200&section=header&text=Opay%20AI%20Powered%20MFS%20&%20Financial%20Safety%20Prototype&fontSize=45&fontColor=FFFFFF&animation=fadeIn&fontAlignY=35" alt="Learning Resources Banner"/>
+</p>
 
 > A full-stack React + TypeScript hackathon prototype for a next-generation Bangladesh mobile financial service (MFS), combining familiar wallet services with AI scam detection, a two-minute safety escrow, PIN-less micro-payments, cross-border QR payments, and student nano-EMI.
 
