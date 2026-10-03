@@ -135,6 +135,10 @@ export const AiScamShield: React.FC<AiScamShieldProps> = ({
         }),
       });
 
+      if (!res.ok) {
+        throw new Error(`Server returned HTTP ${res.status}`);
+      }
+
       const json = await res.json();
       if (json.success && json.data) {
         setSandboxResult(json.data);
