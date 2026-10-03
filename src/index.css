@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #F4F6FB;
+    color: #0F172A;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Custom animations for Upay Scanner & Ripple */
+@keyframes upay-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 87, 184, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(0, 87, 184, 0);
+  }
+}
+
+@keyframes laser-sweep {
+  0% {
+    top: 5%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 90%;
+    opacity: 1;
+  }
+  100% {
+    top: 5%;
+    opacity: 0.8;
+  }
+}
+
+.animate-laser {
+  animation: laser-sweep 1.8s ease-in-out infinite;
+}
+
+.upay-glow {
+  animation: upay-pulse-glow 2s infinite;
+}
+
+/* Hide scrollbar for tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

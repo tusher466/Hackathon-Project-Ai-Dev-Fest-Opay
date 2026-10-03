@@ -1,0 +1,6 @@
+{
+  "name": "Upay MFS & Crypto with AI Scam Shield",
+  "description": "Upay Bangladesh MFS clone with real-time AI scam call and SMS detection, 20-minute safe-hold escrow delay, and biometric authentication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
