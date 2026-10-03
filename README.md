@@ -5,7 +5,8 @@
 > A full-stack React + TypeScript hackathon prototype for a next-generation Bangladesh mobile financial service (MFS), combining familiar wallet services with AI scam detection, a two-minute safety escrow, PIN-less micro-payments, cross-border QR payments, and student nano-EMI.
 
 ---
-
+## Live Prototype: https://hackathon-project-ai-dev-fest-opay.vercel.app/
+---
 ## Table of Contents
 
 - [Project Overview](#project-overview)
