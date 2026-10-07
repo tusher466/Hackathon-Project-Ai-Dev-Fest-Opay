@@ -9,9 +9,6 @@ import { BiometricModal } from './components/BiometricModal';
 import { BanglaQRModal } from './components/BanglaQRModal';
 import { AccountProfileView } from './components/AccountProfileView';
 import { NotificationsModal } from './components/NotificationsModal';
-import { MiniWalletModal } from './components/MiniWalletModal';
-import { CrossBorderPaymentModal } from './components/CrossBorderPaymentModal';
-import { StudentEmiModal, ActiveEmiPlan } from './components/StudentEmiModal';
 import {
   Transaction,
   EscrowHoldItem,
@@ -26,6 +23,7 @@ import {
 } from './data/initialData';
 import { sound } from './utils/audio';
 import { analyzeMessageOrCallLinguistics } from './utils/scamAnalyzer';
+import { fraudMLService } from './ml/fraudMLPipeline';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
@@ -45,22 +43,6 @@ export default function App() {
 
   // Notification Modal state
   const [notificationsOpen, setNotificationsOpen] = useState<boolean>(false);
-
-  // Feature 1: PIN-less Micro-Payments State
-  const [miniWalletOpen, setMiniWalletOpen] = useState<boolean>(false);
-  const [miniWalletBalance, setMiniWalletBalance] = useState<number>(650.0);
-
-  // Feature 2: Cross-Border QR Payments State
-  const [crossBorderOpen, setCrossBorderOpen] = useState<boolean>(false);
-  const [hasTravelEndorsement, setHasTravelEndorsement] = useState<boolean>(false);
-  const [travelQuotaUSD, setTravelQuotaUSD] = useState<number>(1000);
-
-  // Feature 3: Student Nano-EMI State
-  const [studentEmiOpen, setStudentEmiOpen] = useState<boolean>(false);
-  const [isStudentKycApproved, setIsStudentKycApproved] = useState<boolean>(false);
-  const [totalCreditLimit, setTotalCreditLimit] = useState<number>(20000);
-  const [availableCreditLimit, setAvailableCreditLimit] = useState<number>(20000);
-  const [activeEmis, setActiveEmis] = useState<ActiveEmiPlan[]>([]);
 
   // Biometric prompt state
   const [biometricOpen, setBiometricOpen] = useState(false);
@@ -105,7 +87,7 @@ export default function App() {
     setBiometricOpen(true);
   };
 
-  // SEND MONEY INITIATION (WITH CLOSE RELATIVE AUTO-BYPASS)
+  // SEND MONEY INITIATION (CONNECTED DIRECTLY TO TRAINED ML FRAUD MODEL)
   const handleInitiateSendMoney = ({
     recipient,
     recipientName,
@@ -124,15 +106,40 @@ export default function App() {
       recipientName || recipient
     );
 
-    const shouldHoldInEscrow = use20MinEscrow && !isCloseRelative;
+    // Run inference through trained GBDT + Isolation Forest pipeline
+    const currentHour = new Date().getHours();
+    const isNight = currentHour >= 1 && currentHour <= 5 ? 1 : 0;
+    const isUnverified = !isCloseRelative && (recipient.includes('Unknown') || !recipient.startsWith('017')) ? 1 : 0;
+
+    const mlEval = fraudMLService.predict({
+      amount,
+      hourOfDay: currentHour,
+      isNightHours: isNight,
+      isUnverifiedRecipient: isUnverified,
+      recipientVelocity1h: isUnverified ? 4 : 0,
+      amountToBalanceRatio: Math.min(1.0, amount / fiatBalance),
+    });
+
+    // ML Decision Path influences the live transaction:
+    // If high-risk anomaly detected by ML, enforce 2-Min Safe Escrow and Biometric Lock!
+    const isMlHighRisk = mlEval.decision === 'BIOMETRIC_LOCK' || mlEval.decision === 'AUTO_ESCROW_HOLD';
+    const shouldHoldInEscrow = (use20MinEscrow || isMlHighRisk) && !isCloseRelative;
+
+    const actionTitle = isMlHighRisk
+      ? `🚨 [ML Shield: ${mlEval.compositeRiskScore}% Risk] ${mlEval.reason}`
+      : shouldHoldInEscrow
+      ? `Authorize 2-Min Safe Escrow of ৳ ${amount}`
+      : `Confirm Instant Send Money of ৳ ${amount}`;
+
+    const actionTitleBn = isMlHighRisk
+      ? `🚨 [এআই এমএল অ্যালার্ট: ${mlEval.compositeRiskScore}% ঝুঁকি] বাধ্যতামূলক বায়োমেট্রিক ও ২-মি. সেইফ হোল্ড`
+      : shouldHoldInEscrow
+      ? `২-মিনিট সেইফ-হোল্ডে ৳ ${amount} নিশ্চিত করুন`
+      : `তাৎক্ষণিক টাকা পাঠানো নিশ্চিত করুন ৳ ${amount}`;
 
     triggerBiometricAuth({
-      actionTitle: shouldHoldInEscrow
-        ? `Authorize 2-Min Safe Escrow of ৳ ${amount}`
-        : `Confirm Instant Send Money of ৳ ${amount}`,
-      actionTitleBn: shouldHoldInEscrow
-        ? `২-মিনিট সেইফ-হোল্ডে ৳ ${amount} নিশ্চিত করুন`
-        : `তাৎক্ষণিক টাকা পাঠানো নিশ্চিত করুন ৳ ${amount}`,
+      actionTitle,
+      actionTitleBn,
       amount,
       currency: 'BDT',
       onConfirmed: () => {
@@ -153,11 +160,9 @@ export default function App() {
             totalDurationSeconds: 120, // 2 minutes
             remainingSeconds: 120,
             isCloudSynced: true,
-            riskScore: recipient.includes('Unknown') || recipient.startsWith('01600') ? 68 : 12,
-            riskAssessment: recipient.includes('Unknown') ? 'HIGH' : 'LOW',
-            matchedScamFlag: recipient.includes('Unknown')
-              ? 'Unverified recipient flagged for precaution'
-              : undefined,
+            riskScore: mlEval.compositeRiskScore,
+            riskAssessment: isMlHighRisk ? 'CRITICAL' : 'LOW',
+            matchedScamFlag: isMlHighRisk ? mlEval.reason : undefined,
             status: 'holding',
           };
 
@@ -364,151 +369,6 @@ export default function App() {
     });
   };
 
-  // ==========================================
-  // FEATURE 1: MINI-WALLET TOP-UP & INSTANT MICRO-PAY
-  // ==========================================
-  const handleTopUpMiniWallet = (amount: number) => {
-    setFiatBalance((prev) => prev - amount);
-    setMiniWalletBalance((prev) => prev + amount);
-
-    const txnId = `TXN-OPY-${Math.floor(100000 + Math.random() * 900000)}`;
-    const newTxn: Transaction = {
-      id: txnId,
-      type: 'micro_pay',
-      title: `Mini-Wallet Top Up (On-Device)`,
-      titleBn: `অন-ডিভাইস মাইক্রো-ওয়ালেট টপ আপ`,
-      recipient: 'Device Micro-Enclave',
-      amount,
-      fee: 0,
-      currency: 'BDT',
-      timestamp: Date.now(),
-      status: 'completed',
-      category: 'Mini-Wallet',
-    };
-    setTransactions((prev) => [newTxn, ...prev]);
-  };
-
-  const handleQuickMicroPay = (amount: number, merchantTitle: string) => {
-    // Instant 1-tap: no PIN, no bank delay
-    setMiniWalletBalance((prev) => prev - amount);
-
-    const txnId = `MICRO-${Math.floor(100000 + Math.random() * 900000)}`;
-    const newTxn: Transaction = {
-      id: txnId,
-      type: 'micro_pay',
-      title: `1-Tap Micro-Pay: ${merchantTitle}`,
-      titleBn: `১-ট্যাপ পেমেন্ট: ${merchantTitle}`,
-      recipient: merchantTitle,
-      amount,
-      fee: 0,
-      currency: 'BDT',
-      timestamp: Date.now(),
-      status: 'completed',
-      reference: 'Instant 1-Tap (No PIN)',
-      category: 'Micro-Payment',
-    };
-    setTransactions((prev) => [newTxn, ...prev]);
-  };
-
-  // ==========================================
-  // FEATURE 2: CROSS-BORDER QR PAYMENTS
-  // ==========================================
-  const handleExecuteCrossBorderPayment = ({
-    foreignAmount,
-    foreignCurrency,
-    bdtAmount,
-    merchantName,
-    country,
-    network,
-  }: {
-    foreignAmount: number;
-    foreignCurrency: string;
-    bdtAmount: number;
-    merchantName: string;
-    country: string;
-    network: string;
-  }) => {
-    setFiatBalance((prev) => prev - bdtAmount);
-
-    const txnId = `INTL-${Math.floor(100000 + Math.random() * 900000)}`;
-    const newTxn: Transaction = {
-      id: txnId,
-      type: 'cross_border_qr',
-      title: `Cross-Border QR: ${merchantName} (${foreignAmount} ${foreignCurrency})`,
-      titleBn: `আন্তর্জাতিক কিউআর: ${merchantName}`,
-      recipient: `${merchantName} (${country})`,
-      amount: bdtAmount,
-      fee: 0,
-      currency: 'BDT',
-      timestamp: Date.now(),
-      status: 'completed',
-      reference: `${network} • Nostro Settled`,
-      category: 'Cross-Border',
-    };
-    setTransactions((prev) => [newTxn, ...prev]);
-  };
-
-  // ==========================================
-  // FEATURE 3: STUDENT NANO-EMI (MICRO-CREDIT)
-  // ==========================================
-  const handleCreateStudentEmiPurchase = ({
-    merchantName,
-    itemTitle,
-    principalAmount,
-    tenureMonths,
-    monthlyInstallment,
-  }: {
-    merchantName: string;
-    itemTitle: string;
-    principalAmount: number;
-    tenureMonths: number;
-    monthlyInstallment: number;
-    autoDebitAuthorized: boolean;
-  }) => {
-    // Merchant is paid in full upfront by UCB Bank
-    // Available limit decreases by principal
-    setAvailableCreditLimit((prev) => prev - principalAmount);
-
-    const nextMonth = new Date();
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    const nextMonthStr = nextMonth.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-
-    const newEmiPlan: ActiveEmiPlan = {
-      id: `EMI-${Math.floor(10000 + Math.random() * 90000)}`,
-      merchantName,
-      itemTitle,
-      principalAmount,
-      tenureMonths,
-      monthlyInstallment,
-      remainingMonths: tenureMonths,
-      nextDueDate: nextMonthStr,
-      status: 'Active',
-    };
-
-    setActiveEmis((prev) => [newEmiPlan, ...prev]);
-
-    const txnId = `EMI-${Math.floor(100000 + Math.random() * 900000)}`;
-    const newTxn: Transaction = {
-      id: txnId,
-      type: 'student_emi',
-      title: `Student EMI Purchase: ${merchantName}`,
-      titleBn: `স্টুডেন্ট ইএমআই ক্রয়: ${merchantName}`,
-      recipient: merchantName,
-      amount: principalAmount,
-      fee: 0,
-      currency: 'BDT',
-      timestamp: Date.now(),
-      status: 'completed',
-      reference: `${itemTitle} (${tenureMonths} Mo @ ৳${monthlyInstallment}/mo)`,
-      category: 'Nano-Credit',
-    };
-    setTransactions((prev) => [newTxn, ...prev]);
-  };
-
   // SIMULATE LIVE INCOMING FEED WITH DYNAMIC NEURAL ANALYSIS
   const handleSimulateIncoming = (type: 'call' | 'sms', variant: 'scam' | 'safe') => {
     const id = `SIM-${Date.now()}`;
@@ -657,9 +517,6 @@ export default function App() {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         onOpenBanglaQR={() => setBanglaQrOpen(true)}
-        onOpenMiniWallet={() => setMiniWalletOpen(true)}
-        onOpenCrossBorder={() => setCrossBorderOpen(true)}
-        onOpenStudentEmi={() => setStudentEmiOpen(true)}
         lang={lang}
         escrowCount={escrowItems.filter((i) => i.status === 'holding').length}
         threatsCount={unreadAlertsCount}
@@ -671,7 +528,6 @@ export default function App() {
           <MfsHub
             balance={fiatBalance}
             lang={lang}
-            miniBalance={miniWalletBalance}
             onInitiateSendMoney={handleInitiateSendMoney}
             onCashIn={handleCashIn}
             onCashOut={handleCashOut}
@@ -679,9 +535,6 @@ export default function App() {
             onPayBill={handlePayBill}
             onOpenEscrowTab={() => setActiveTab('escrow')}
             onOpenBanglaQR={() => setBanglaQrOpen(true)}
-            onOpenMiniWallet={() => setMiniWalletOpen(true)}
-            onOpenCrossBorder={() => setCrossBorderOpen(true)}
-            onOpenStudentEmi={() => setStudentEmiOpen(true)}
           />
         )}
 
@@ -761,48 +614,6 @@ export default function App() {
           setNotificationsOpen(false);
           setActiveTab('shield');
         }}
-      />
-
-      {/* Feature 1: PIN-less Micro-Payments Mini-Wallet Modal */}
-      <MiniWalletModal
-        isOpen={miniWalletOpen}
-        onClose={() => setMiniWalletOpen(false)}
-        mainBalance={fiatBalance}
-        miniBalance={miniWalletBalance}
-        maxLimit={1000}
-        lang={lang}
-        onTopUpMiniWallet={handleTopUpMiniWallet}
-        onQuickMicroPay={handleQuickMicroPay}
-      />
-
-      {/* Feature 2: Cross-Border QR Payments Modal */}
-      <CrossBorderPaymentModal
-        isOpen={crossBorderOpen}
-        onClose={() => setCrossBorderOpen(false)}
-        balance={fiatBalance}
-        lang={lang}
-        hasTravelEndorsement={hasTravelEndorsement}
-        travelQuotaRemainingUSD={travelQuotaUSD}
-        onEndorseQuota={() => {
-          setHasTravelEndorsement(true);
-          setTravelQuotaUSD(1000);
-        }}
-        onExecuteCrossBorderPayment={handleExecuteCrossBorderPayment}
-      />
-
-      {/* Feature 3: Student Nano-EMI Micro-Credit Modal */}
-      <StudentEmiModal
-        isOpen={studentEmiOpen}
-        onClose={() => setStudentEmiOpen(false)}
-        lang={lang}
-        isKycApproved={isStudentKycApproved}
-        totalCreditLimit={totalCreditLimit}
-        availableCreditLimit={availableCreditLimit}
-        activeEmis={activeEmis}
-        onApproveKyc={() => {
-          setIsStudentKycApproved(true);
-        }}
-        onCreateEmiPurchase={handleCreateStudentEmiPurchase}
       />
 
       {/* Footer */}

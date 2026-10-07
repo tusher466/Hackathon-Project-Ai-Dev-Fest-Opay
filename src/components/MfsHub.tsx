@@ -23,9 +23,7 @@ import {
   Zap,
   Check,
   HelpCircle,
-  Users,
-  Globe2,
-  GraduationCap
+  Users
 } from 'lucide-react';
 import {
   IconSendMoney,
@@ -67,7 +65,6 @@ import { sound } from '../utils/audio';
 interface MfsHubProps {
   balance: number;
   lang: Language;
-  miniBalance?: number;
   onInitiateSendMoney: (params: {
     recipient: string;
     recipientName: string;
@@ -81,15 +78,11 @@ interface MfsHubProps {
   onPayBill: (bill: BillProvider, billNo: string, amount: number) => void;
   onOpenEscrowTab: () => void;
   onOpenBanglaQR: () => void;
-  onOpenMiniWallet?: () => void;
-  onOpenCrossBorder?: () => void;
-  onOpenStudentEmi?: () => void;
 }
 
 export const MfsHub: React.FC<MfsHubProps> = ({
   balance,
   lang,
-  miniBalance = 500,
   onInitiateSendMoney,
   onCashIn,
   onCashOut,
@@ -97,9 +90,6 @@ export const MfsHub: React.FC<MfsHubProps> = ({
   onPayBill,
   onOpenEscrowTab,
   onOpenBanglaQR,
-  onOpenMiniWallet,
-  onOpenCrossBorder,
-  onOpenStudentEmi,
 }) => {
   // Modal states
   const [activeModal, setActiveModal] = useState<
@@ -413,101 +403,6 @@ export const MfsHub: React.FC<MfsHubProps> = ({
             );
           })}
         </div>
-      </div>
-
-      {/* ==================================================== */}
-      {/* 1.5 NEW INNOVATION TRIO (Feature 1, Feature 2, Feature 3) */}
-      {/* ==================================================== */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        {/* Feature 1: PIN-less Micro-Payments */}
-        <button
-          onClick={() => {
-            sound.playTap();
-            if (onOpenMiniWallet) onOpenMiniWallet();
-          }}
-          className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-br from-teal-500/10 via-emerald-500/10 to-teal-500/5 border border-teal-200/80 hover:border-teal-500 hover:shadow-md transition text-left flex flex-col justify-between group active:scale-95 cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition">
-              <Zap className="w-4 h-4 fill-amber-300 text-amber-300" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-tight text-teal-800 bg-teal-100 px-1.5 py-0.5 rounded-full">
-              F1
-            </span>
-          </div>
-          <div>
-            <h4 className="text-xs font-black text-slate-900 group-hover:text-teal-700 leading-tight">
-              {lang === 'bn' ? 'পিন-লেস ওয়ালেট' : 'PIN-less Micro-Pay'}
-            </h4>
-            <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
-              {lang === 'bn' ? '১-ট্যাপে চা/বাস ভাড়া' : '< ৳500 Instant'}
-            </p>
-          </div>
-          <div className="mt-2 pt-1 border-t border-teal-200/60 flex items-center justify-between text-[10px] font-bold text-teal-700">
-            <span>{formatBdt(miniBalance, lang)}</span>
-            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />
-          </div>
-        </button>
-
-        {/* Feature 2: Cross-Border QR Payments */}
-        <button
-          onClick={() => {
-            sound.playTap();
-            if (onOpenCrossBorder) onOpenCrossBorder();
-          }}
-          className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-br from-blue-500/10 via-indigo-500/10 to-blue-500/5 border border-blue-200/80 hover:border-blue-500 hover:shadow-md transition text-left flex flex-col justify-between group active:scale-95 cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-8 h-8 rounded-xl bg-[#0057B8] text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition">
-              <Globe2 className="w-4 h-4 text-cyan-300" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-tight text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded-full">
-              F2
-            </span>
-          </div>
-          <div>
-            <h4 className="text-xs font-black text-slate-900 group-hover:text-blue-700 leading-tight">
-              {lang === 'bn' ? 'আন্তর্জাতিক QR' : 'Cross-Border QR'}
-            </h4>
-            <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
-              {lang === 'bn' ? 'ভারতে UPI স্ক্যান' : 'India UPI / UAE'}
-            </p>
-          </div>
-          <div className="mt-2 pt-1 border-t border-blue-200/60 flex items-center justify-between text-[10px] font-bold text-blue-700">
-            <span>$1,000 Quota</span>
-            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />
-          </div>
-        </button>
-
-        {/* Feature 3: Student Nano-EMI */}
-        <button
-          onClick={() => {
-            sound.playTap();
-            if (onOpenStudentEmi) onOpenStudentEmi();
-          }}
-          className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-purple-500/5 border border-purple-200/80 hover:border-purple-500 hover:shadow-md transition text-left flex flex-col justify-between group active:scale-95 cursor-pointer"
-        >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-700 text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition">
-              <GraduationCap className="w-4 h-4 text-amber-300" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-tight text-indigo-800 bg-indigo-100 px-1.5 py-0.5 rounded-full">
-              F3
-            </span>
-          </div>
-          <div>
-            <h4 className="text-xs font-black text-slate-900 group-hover:text-indigo-700 leading-tight">
-              {lang === 'bn' ? 'স্টুডেন্ট EMI' : 'Student EMI'}
-            </h4>
-            <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">
-              {lang === 'bn' ? '০% মাইক্রো-ক্রেডিট' : '0% Nano-Credit'}
-            </p>
-          </div>
-          <div className="mt-2 pt-1 border-t border-purple-200/60 flex items-center justify-between text-[10px] font-bold text-indigo-700">
-            <span>৳20,000 Limit</span>
-            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />
-          </div>
-        </button>
       </div>
 
       {/* ==================================================== */}

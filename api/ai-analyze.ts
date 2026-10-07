@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { fraudMLService } from '../src/ml/fraudMLPipeline';
 
 // Advanced dynamic style-matching analysis engine for Vercel Serverless
 function dynamicLinguisticAnalyze({
@@ -154,6 +155,16 @@ export default async function handler(req: any, res: any) {
 
     // Use Gemini if API key is provided in Vercel environment variables
     const apiKey = process.env.GEMINI_API_KEY;
+    // Execute trained GBDT + Isolation Forest prediction
+    const mlEvaluation = fraudMLService.predict({
+      callDurationSeconds: durationSeconds,
+      urgencyKeywordCount: /(urgent|জরুরি|freeze|বন্ধ|হয়ে যাবে|block|ব্লক)/i.test(content) ? 2 : 0,
+      credentialSolicitationFlag: /(pin|পিন|password|পাসওয়ার্ড|otp|ওটিপি)/i.test(content) ? 1 : 0,
+      lotteryGuiltFlag: /(lottery|লটারি|prize|পুরস্কার|won|বিজয়ী|ভুল করে)/i.test(content) ? 1 : 0,
+      authorityImpersonationScore: /(officer|ইন্সপেক্টর|পুলিশ|র‌্যাব|police|btrc|bangladesh bank|বাংলাদেশ ব্যাংক)/i.test(content) ? 1 : 0,
+      remoteTakeoverFlag: /(anydesk|teamviewer|screen share|স্ক্রিন শেয়ার|\.apk)/i.test(content) ? 1 : 0,
+    });
+
     if (apiKey && apiKey.trim().length > 0) {
       try {
         const ai = new GoogleGenAI({
@@ -202,17 +213,17 @@ Return ONLY a valid JSON object matching:
 
         const text = response.text || '';
         const parsed = JSON.parse(text);
-        res.status(200).json({ success: true, data: parsed, engine: 'gemini-2.5-flash' });
+        res.status(200).json({ success: true, data: { ...parsed, mlEvaluation }, engine: 'gemini-2.5-flash' });
         return;
       } catch (geminiErr) {
         console.warn('Gemini API call failed on Vercel, falling back to neural linguistic analyzer:', geminiErr);
         const result = dynamicLinguisticAnalyze({ type, content, callerNumber, durationSeconds });
-        res.status(200).json({ success: true, data: result, engine: 'upay-neural-matcher' });
+        res.status(200).json({ success: true, data: { ...result, mlEvaluation }, engine: 'upay-neural-matcher' });
         return;
       }
     } else {
       const result = dynamicLinguisticAnalyze({ type, content, callerNumber, durationSeconds });
-      res.status(200).json({ success: true, data: result, engine: 'upay-neural-matcher' });
+      res.status(200).json({ success: true, data: { ...result, mlEvaluation }, engine: 'upay-neural-matcher' });
       return;
     }
   } catch (error: any) {

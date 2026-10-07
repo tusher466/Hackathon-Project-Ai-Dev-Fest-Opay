@@ -22,11 +22,13 @@ import {
   Activity,
   Check,
   Zap,
-  Info
+  Info,
+  BrainCircuit
 } from 'lucide-react';
 import { AnalyzedEvent, Language } from '../types';
 import { sound } from '../utils/audio';
 import { analyzeMessageOrCallLinguistics } from '../utils/scamAnalyzer';
+import { MlModelEvaluationDashboard } from './MlModelEvaluationDashboard';
 
 interface AiScamShieldProps {
   events: AnalyzedEvent[];
@@ -47,6 +49,7 @@ export const AiScamShield: React.FC<AiScamShieldProps> = ({
 }) => {
   const [selectedEvent, setSelectedEvent] = useState<AnalyzedEvent | null>(events[0] || null);
   const [filterType, setFilterType] = useState<'all' | 'call' | 'sms' | 'threats'>('all');
+  const [activeView, setActiveView] = useState<'ml_metrics' | 'monitor'>('ml_metrics');
 
   // Interactive Sandbox state
   const [sandboxType, setSandboxType] = useState<'sms' | 'call'>('sms');
@@ -214,8 +217,48 @@ export const AiScamShield: React.FC<AiScamShieldProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Banner with Real-Time Model Status */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 text-white shadow-xl">
+      {/* View Switcher: Trained ML Model Evaluation Dashboard vs. Live Feed Monitor */}
+      <div className="flex flex-wrap items-center gap-2 bg-slate-200/90 p-1.5 rounded-2xl w-fit shadow-xs">
+        <button
+          onClick={() => {
+            sound.playTap();
+            setActiveView('ml_metrics');
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition ${
+            activeView === 'ml_metrics'
+              ? 'bg-[#0057B8] text-white shadow-md'
+              : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+          }`}
+        >
+          <BrainCircuit className="w-4 h-4 text-cyan-300" />
+          <span>ML Model Evaluation & Validation (10,000 Samples)</span>
+          <span className="bg-amber-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-tight">
+            Judges View
+          </span>
+        </button>
+
+        <button
+          onClick={() => {
+            sound.playTap();
+            setActiveView('monitor');
+          }}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-2 transition ${
+            activeView === 'monitor'
+              ? 'bg-slate-900 text-white shadow-md'
+              : 'text-slate-700 hover:text-slate-900 hover:bg-slate-300/60'
+          }`}
+        >
+          <ShieldAlert className="w-4 h-4 text-rose-400" />
+          <span>Live Call & SMS Scam Monitor</span>
+        </button>
+      </div>
+
+      {activeView === 'ml_metrics' ? (
+        <MlModelEvaluationDashboard lang={lang} />
+      ) : (
+        <>
+          {/* Top Banner with Real-Time Model Status */}
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 text-white shadow-xl">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-rose-600/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-[#0057B8]/20 blur-3xl pointer-events-none" />
 
@@ -929,6 +972,8 @@ export const AiScamShield: React.FC<AiScamShieldProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 };

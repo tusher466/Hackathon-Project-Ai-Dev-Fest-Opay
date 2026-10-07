@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, User, History, ShieldAlert, Clock, Smartphone, Zap, Globe2, GraduationCap } from 'lucide-react';
+import { Home, User, History, ShieldAlert, Clock, Smartphone } from 'lucide-react';
 import { IconBanglaQR } from './UpayIcons';
 import { Language } from '../types';
 import { sound } from '../utils/audio';
@@ -10,9 +10,6 @@ interface NavigationTabsProps {
   activeTab: TabKey;
   onSelectTab: (tab: TabKey) => void;
   onOpenBanglaQR: () => void;
-  onOpenMiniWallet?: () => void;
-  onOpenCrossBorder?: () => void;
-  onOpenStudentEmi?: () => void;
   lang: Language;
   escrowCount: number;
   threatsCount: number;
@@ -22,9 +19,6 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
   activeTab,
   onSelectTab,
   onOpenBanglaQR,
-  onOpenMiniWallet,
-  onOpenCrossBorder,
-  onOpenStudentEmi,
   lang,
   escrowCount,
   threatsCount,
@@ -103,48 +97,6 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
                 </button>
               );
             })}
-
-            {/* Quick Action Badges for Always-Accessible Innovation Features */}
-            <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
-
-            {/* Feature 1: Mini-Wallet */}
-            <button
-              onClick={() => {
-                sound.playTap();
-                if (onOpenMiniWallet) onOpenMiniWallet();
-              }}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 shadow-2xs transition"
-              title="PIN-less Micro-Payments"
-            >
-              <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
-              <span>{lang === 'bn' ? 'মাইক্রো-ওয়ালেট' : 'Micro-Pay'}</span>
-            </button>
-
-            {/* Feature 2: Cross Border QR */}
-            <button
-              onClick={() => {
-                sound.playTap();
-                if (onOpenCrossBorder) onOpenCrossBorder();
-              }}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap bg-blue-50 hover:bg-blue-100 text-[#0057B8] border border-blue-200 shadow-2xs transition"
-              title="Cross-Border QR Payments"
-            >
-              <Globe2 className="w-3.5 h-3.5 text-cyan-600" />
-              <span>{lang === 'bn' ? 'আন্তর্জাতিক QR' : 'Cross-Border'}</span>
-            </button>
-
-            {/* Feature 3: Student EMI */}
-            <button
-              onClick={() => {
-                sound.playTap();
-                if (onOpenStudentEmi) onOpenStudentEmi();
-              }}
-              className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 shadow-2xs transition"
-              title="Student Nano-EMI"
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-amber-500" />
-              <span>{lang === 'bn' ? 'স্টুডেন্ট EMI' : 'Student EMI'}</span>
-            </button>
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { fraudMLService } from './src/ml/fraudMLPipeline.ts';
 
 dotenv.config();
 
@@ -243,6 +244,40 @@ Return ONLY a valid JSON object matching:
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
+// ============================================================================
+// ML PIPELINE ENDPOINTS (REPRODUCIBLE MODEL TRAINED ON 10,000 SAMPLES)
+// ============================================================================
+
+// 1. Get Model Evaluation Metrics (Accuracy, Precision, Recall, F1, PR-AUC, Confusion Matrix, Baseline)
+app.get('/api/ml/metrics', (req, res) => {
+  try {
+    const metrics = fraudMLService.getMetrics();
+    res.json({ success: true, data: metrics });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. Retrain Model on 10,000 Synthetic Samples
+app.post('/api/ml/train', (req, res) => {
+  try {
+    const metrics = fraudMLService.trainPipeline();
+    res.json({ success: true, data: metrics, message: 'Model successfully trained on 10,000 samples with 80/20 train/test split.' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. Live ML Prediction on Transaction / Interaction
+app.post('/api/ml/predict', (req, res) => {
+  try {
+    const prediction = fraudMLService.predict(req.body);
+    res.json({ success: true, data: prediction });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 async function startServer() {

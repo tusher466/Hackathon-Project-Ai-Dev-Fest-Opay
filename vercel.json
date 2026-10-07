@@ -7,6 +7,18 @@
   "cleanUrls": true,
   "rewrites": [
     {
+      "source": "/api/ml/metrics",
+      "destination": "/api/ml-metrics"
+    },
+    {
+      "source": "/api/ml/train",
+      "destination": "/api/ml-metrics"
+    },
+    {
+      "source": "/api/ml/predict",
+      "destination": "/api/ml-predict"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
