@@ -9,6 +9,7 @@ import { BiometricModal } from './components/BiometricModal';
 import { BanglaQRModal } from './components/BanglaQRModal';
 import { AccountProfileView } from './components/AccountProfileView';
 import { NotificationsModal } from './components/NotificationsModal';
+import { FraudTrendsDashboard } from './components/FraudTrendsDashboard';
 import {
   Transaction,
   EscrowHoldItem,
@@ -535,6 +536,7 @@ export default function App() {
             onPayBill={handlePayBill}
             onOpenEscrowTab={() => setActiveTab('escrow')}
             onOpenBanglaQR={() => setBanglaQrOpen(true)}
+            onOpenTrendsTab={() => setActiveTab('trends')}
           />
         )}
 
@@ -557,6 +559,14 @@ export default function App() {
             onSimulateIncoming={handleSimulateIncoming}
             onAddEvent={handleAddAnalyzedEvent}
             onReanalyzeAll={handleReanalyzeAllEvents}
+          />
+        )}
+
+        {activeTab === 'trends' && (
+          <FraudTrendsDashboard
+            lang={lang}
+            onOpenShield={() => setActiveTab('shield')}
+            onOpenEscrow={() => setActiveTab('escrow')}
           />
         )}
 

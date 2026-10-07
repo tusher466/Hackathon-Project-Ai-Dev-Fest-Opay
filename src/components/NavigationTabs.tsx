@@ -1,10 +1,10 @@
 import React from 'react';
-import { Home, User, History, ShieldAlert, Clock, Smartphone } from 'lucide-react';
+import { Home, User, History, ShieldAlert, Clock, Smartphone, TrendingUp } from 'lucide-react';
 import { IconBanglaQR } from './UpayIcons';
 import { Language } from '../types';
 import { sound } from '../utils/audio';
 
-export type TabKey = 'mfs' | 'account' | 'shield' | 'escrow' | 'history';
+export type TabKey = 'mfs' | 'account' | 'shield' | 'escrow' | 'history' | 'trends';
 
 interface NavigationTabsProps {
   activeTab: TabKey;
@@ -43,6 +43,14 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
       icon: ShieldAlert,
       badge: threatsCount > 0 ? `${threatsCount} Alerts` : undefined,
       badgeColor: 'bg-rose-500 text-white',
+    },
+    {
+      id: 'trends' as TabKey,
+      label: 'Fraud Trends',
+      labelBn: 'এআই ট্রেন্ডস',
+      icon: TrendingUp,
+      badge: 'Live',
+      badgeColor: 'bg-emerald-600 text-white',
     },
     {
       id: 'escrow' as TabKey,
