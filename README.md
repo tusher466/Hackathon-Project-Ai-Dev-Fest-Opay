@@ -53,7 +53,7 @@
 - [Known Limitations and Development Notes](#known-limitations-and-development-notes)
 - [Recommended Production Roadmap](#recommended-production-roadmap)
 - [Hackathon Highlights](#hackathon-highlights)
-- [License](#license)
+
 
 ---
 
